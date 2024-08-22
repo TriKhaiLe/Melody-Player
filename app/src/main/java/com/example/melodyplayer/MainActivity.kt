@@ -75,11 +75,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun fadeIn(onFadeComplete: () -> Unit) {
         val handler = Handler(mainLooper)
-        val volumeIncrement = 1.0f / (fadeDuration / 100)
+        val volumeIncrement = 1.0f / 100f // Simplified increment calculation
         var currentVolume = 0f
 
         for (i in 0..100) {
             handler.postDelayed({
+                if (i == 0) {
+                    mediaPlayer.setVolume(0f, 0f) // Start from 0 volume
+                    mediaPlayer.start() // Start playback at the beginning of fade-in
+                }
                 currentVolume = i * volumeIncrement
                 mediaPlayer.setVolume(currentVolume, currentVolume)
                 if (i == 100) {
