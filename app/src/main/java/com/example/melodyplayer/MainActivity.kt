@@ -13,7 +13,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playPauseButton: Button
     private lateinit var loopToggleButton: ToggleButton
     private val fadeDuration = 5000L // 5 seconds
-    private var isPlaying = false
+    private var isMusicPlaying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,17 +30,21 @@ class MainActivity : AppCompatActivity() {
                 playPauseButton.isEnabled = true
             }
             setOnCompletionListener {
-                fadeOut()
-                if (loopToggleButton.isChecked) {
-                    start()  // Replay the music when looping is enabled
-                    fadeIn()
+                fadeOut {
+                    if (loopToggleButton.isChecked) {
+                        mediaPlayer.seekTo(0) // Restart the track
+                        playMusic()  // Automatically play again with fade-in
+                    } else {
+                        isMusicPlaying = false
+                        playPauseButton.text = "Play"
+                    }
                 }
             }
         }
 
         // Play/Pause Button Click Listener
         playPauseButton.setOnClickListener {
-            if (isPlaying) {
+            if (isMusicPlaying) {
                 pauseMusic()
             } else {
                 playMusic()
@@ -54,43 +58,57 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playMusic() {
-        mediaPlayer.start()
-        fadeIn()
-        playPauseButton.text = "Pause"
-        isPlaying = true
-    }
-
-    private fun pauseMusic() {
-        fadeOut()
-        mediaPlayer.pause()
-        playPauseButton.text = "Play"
-        isPlaying = false
-    }
-
-    private fun fadeIn() {
-        val handler = Handler(mainLooper)
-        val volumeIncrement = 1.0f / (fadeDuration / 100)
-
-        for (i in 0..100) {
-            handler.postDelayed({
-                mediaPlayer.setVolume(i * volumeIncrement, i * volumeIncrement)
-            }, i * 50L)
+        fadeIn {
+            mediaPlayer.start()
+            playPauseButton.text = "Pause"
+            isMusicPlaying = true
         }
     }
 
-    private fun fadeOut() {
+    private fun pauseMusic() {
+        fadeOut {
+            mediaPlayer.pause()
+            playPauseButton.text = "Play"
+            isMusicPlaying = false
+        }
+    }
+
+    private fun fadeIn(onFadeComplete: () -> Unit) {
         val handler = Handler(mainLooper)
-        val volumeDecrement = 1.0f / (fadeDuration / 100)
+        val volumeIncrement = 1.0f / (fadeDuration / 100)
+        var currentVolume = 0f
 
         for (i in 0..100) {
             handler.postDelayed({
-                mediaPlayer.setVolume((100 - i) * volumeDecrement, (100 - i) * volumeDecrement)
-            }, i * 50L)
+                currentVolume = i * volumeIncrement
+                mediaPlayer.setVolume(currentVolume, currentVolume)
+                if (i == 100) {
+                    onFadeComplete()  // Trigger when fade-in is complete
+                }
+            }, i * (fadeDuration / 100))
+        }
+    }
+
+    private fun fadeOut(onFadeComplete: () -> Unit) {
+        val handler = Handler(mainLooper)
+        val volumeDecrement = 1.0f / (fadeDuration / 100)
+        var currentVolume = 1.0f
+
+        for (i in 0..100) {
+            handler.postDelayed({
+                currentVolume = (100 - i) * volumeDecrement
+                mediaPlayer.setVolume(currentVolume, currentVolume)
+                if (i == 100) {
+                    onFadeComplete()  // Trigger when fade-out is complete
+                }
+            }, i * (fadeDuration / 100))
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer.release()
+        if (::mediaPlayer.isInitialized) {
+            mediaPlayer.release()
+        }
     }
 }
