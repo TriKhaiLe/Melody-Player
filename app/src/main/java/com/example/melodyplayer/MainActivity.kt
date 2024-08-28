@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun playMusic() {
         fadeIn {
-            mediaPlayer.start()
+//            mediaPlayer.start()
             scheduleFadeOut()
             playPauseButton.text = "Pause"
             isLMusicPlaying = true
