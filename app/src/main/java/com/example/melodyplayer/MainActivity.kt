@@ -58,7 +58,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun playMusic() {
         fadeIn {
-//            mediaPlayer.start()
             scheduleFadeOut()
             playPauseButton.text = "Pause"
             isLMusicPlaying = true
@@ -112,16 +111,7 @@ class MainActivity : AppCompatActivity() {
     private fun scheduleFadeOut() {
         val handler = Handler(mainLooper)
         handler.postDelayed({
-            fadeOut {
-                if (loopToggleButton.isChecked) {
-                    mediaPlayer.seekTo(0) // Restart the track
-                    fadeIn {} // Fade-in for the looped playback
-                } else {
-                    mediaPlayer.pause()
-                    playPauseButton.text = "Play"
-                    isLMusicPlaying = false
-                }
-            }
+            fadeOut {}
         }, songDuration - 2*fadeDuration)
     }
 
