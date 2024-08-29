@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
                     isLMusicPlaying = false
                 }
             }
-        }, songDuration - fadeDuration)
+        }, songDuration - 2*fadeDuration)
     }
 
     override fun onDestroy() {
