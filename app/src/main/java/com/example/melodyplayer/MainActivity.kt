@@ -37,17 +37,15 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     isLMusicPlaying = false
                     playPauseButton.text = "Play"
+                    playPauseButton.isEnabled = true
                 }
             }
         }
 
         // Play/Pause Button Click Listener
         playPauseButton.setOnClickListener {
-            if (isLMusicPlaying) {
-                pauseMusic()
-            } else {
-                playMusic()
-            }
+            playPauseButton.isEnabled = false
+            playMusic()
         }
 
         // Loop Toggle Button Listener
@@ -59,16 +57,7 @@ class MainActivity : AppCompatActivity() {
     private fun playMusic() {
         fadeIn {
             scheduleFadeOut()
-            playPauseButton.text = "Pause"
             isLMusicPlaying = true
-        }
-    }
-
-    private fun pauseMusic() {
-        fadeOut {
-            mediaPlayer.pause()
-            playPauseButton.text = "Play"
-            isLMusicPlaying = false
         }
     }
 
