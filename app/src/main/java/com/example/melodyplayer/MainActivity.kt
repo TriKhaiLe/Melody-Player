@@ -6,15 +6,22 @@ import android.os.Handler
 import android.widget.Button
 import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 
+@UnstableApi
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var mediaPlayer: MediaPlayer
+    private lateinit var exoPlayer: ExoPlayer
     private lateinit var playPauseButton: Button
     private lateinit var loopToggleButton: ToggleButton
     private val fadeDuration = 5000L // 5 seconds
-    private var isLMusicPlaying = false
     private val songDuration = 15000L // 15 seconds
+    private var isMusicPlaying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,23 +30,36 @@ class MainActivity : AppCompatActivity() {
         playPauseButton = findViewById(R.id.playPauseButton)
         loopToggleButton = findViewById(R.id.loopToggleButton)
 
-        // Initialize MediaPlayer
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource("https://un-silent-backend-mobile.azurewebsites.net/api/v1/musics/file/1k7wMvWeR2ZMnbAtRXCxsfd4WRo_B_cLE")
-            prepareAsync()
-            setOnPreparedListener {
-                playPauseButton.isEnabled = true
-            }
-            setOnCompletionListener {
-                if (loopToggleButton.isChecked) {
-                    mediaPlayer.seekTo(0)
-                    playMusic()  // Automatically play again with fade-in
-                } else {
-                    isLMusicPlaying = false
-                    playPauseButton.text = "Play"
-                    playPauseButton.isEnabled = true
+        // Initialize ExoPlayer
+        exoPlayer = ExoPlayer.Builder(this).build().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
+                true
+            )
+            setMediaItem(MediaItem.fromUri("https://un-silent-backend-mobile.azurewebsites.net/api/v1/musics/file/1k7wMvWeR2ZMnbAtRXCxsfd4WRo_B_cLE"))
+            prepare()
+
+            addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    when (playbackState) {
+                        Player.STATE_READY -> {
+                            // The player is ready to play, enable the button
+                            playPauseButton.isEnabled = true
+                        }
+                        Player.STATE_ENDED -> {
+                            if (loopToggleButton.isChecked) {
+                                seekTo(0)
+                                playMusic() // Automatically play again with fade-in
+                            } else {
+                                isMusicPlaying = false
+                                playPauseButton.text = "Play"
+                                playPauseButton.isEnabled = true
+                            }
+                        }
+                    }
+
                 }
-            }
+            })
         }
 
         // Play/Pause Button Click Listener
@@ -49,15 +69,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Loop Toggle Button Listener
-        loopToggleButton.setOnCheckedChangeListener { _, isChecked ->
-            mediaPlayer.isLooping = false // Custom loop handling
+        loopToggleButton.setOnCheckedChangeListener { _, _ ->
+            exoPlayer.repeatMode = Player.REPEAT_MODE_OFF // Custom loop handling
         }
     }
 
     private fun playMusic() {
         fadeIn {
             scheduleFadeOut()
-            isLMusicPlaying = true
+            isMusicPlaying = true
         }
     }
 
@@ -69,11 +89,11 @@ class MainActivity : AppCompatActivity() {
         for (i in 0..100) {
             handler.postDelayed({
                 if (i == 0) {
-                    mediaPlayer.setVolume(0f, 0f)
-                    mediaPlayer.start()
+                    exoPlayer.volume = 0f
+                    exoPlayer.play()
                 }
                 currentVolume = i * volumeIncrement
-                mediaPlayer.setVolume(currentVolume, currentVolume)
+                exoPlayer.volume = currentVolume
                 if (i == 100) {
                     onFadeComplete()
                 }
@@ -89,7 +109,7 @@ class MainActivity : AppCompatActivity() {
         for (i in 0..100) {
             handler.postDelayed({
                 currentVolume = (100 - i) * volumeDecrement
-                mediaPlayer.setVolume(currentVolume, currentVolume)
+                exoPlayer.volume = currentVolume
                 if (i == 100) {
                     onFadeComplete()
                 }
@@ -101,13 +121,13 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler(mainLooper)
         handler.postDelayed({
             fadeOut {}
-        }, songDuration - 2*fadeDuration)
+        }, songDuration - 2 * fadeDuration)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (::mediaPlayer.isInitialized) {
-            mediaPlayer.release()
+        if (::exoPlayer.isInitialized) {
+            exoPlayer.release()
         }
     }
 }
