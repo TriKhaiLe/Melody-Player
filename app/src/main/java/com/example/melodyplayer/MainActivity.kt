@@ -65,12 +65,30 @@ class MainActivity : AppCompatActivity() {
                         }
                         Player.STATE_ENDED -> {
                             if (exoPlayer.mediaItemCount > 0) {
-                                // If playlist is not empty, replay a random song
-                                val randomIndex = (0 until exoPlayer.mediaItemCount).random() // Get random index
-                                exoPlayer.seekTo(randomIndex, C.TIME_UNSET) // Seek to random song
-                                Toast.makeText(this@MainActivity, "Replaying a random song", Toast.LENGTH_SHORT).show()
-                                playMusic() // Start playing with fade-in
-                            } else {
+                                val handler = Handler(mainLooper)
+
+                                val checkMusicPlayingRunnable = object : Runnable {
+                                    override fun run() {
+                                        if (!isMusicPlaying) {
+                                            // If music is not playing, replay a random song
+                                            val randomIndex = (0 until exoPlayer.mediaItemCount).random() // Get random index
+                                            exoPlayer.seekTo(randomIndex, C.TIME_UNSET) // Seek to random song
+                                            Toast.makeText(this@MainActivity, "Replaying a random song", Toast.LENGTH_SHORT).show()
+                                            playMusic() // Play the music again
+
+                                            // Remove the runnable as we no longer need it
+                                            handler.removeCallbacks(this)
+                                        } else {
+                                            // If music is still playing, check again after a short delay
+                                            handler.postDelayed(this, 500) // Check again after 500ms
+                                        }
+                                    }
+                                }
+
+                                // Start checking immediately
+                                handler.post(checkMusicPlayingRunnable)
+                            }
+                            else {
                                 isMusicPlaying = false
                                 playPauseButton.text = "Play"
                                 playPauseButton.isEnabled = true
