@@ -60,21 +60,20 @@ class MainActivity : AppCompatActivity() {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     when (playbackState) {
                         Player.STATE_READY -> {
-                            // The player is ready to play, enable the button
                             playMusic()
 //                            addNewSongToPlaylist("")
                         }
                         Player.STATE_ENDED -> {
-                            if (exoPlayer.hasNextMediaItem()) {
-                                // If there's another song in the playlist, move to the next and apply fade-in
-                                exoPlayer.seekToNextMediaItem()
-                                Toast.makeText(this@MainActivity, "Next Item", Toast.LENGTH_SHORT).show()
-                                playMusic()
+                            if (exoPlayer.mediaItemCount > 0) {
+                                // If playlist is not empty, replay a random song
+                                val randomIndex = (0 until exoPlayer.mediaItemCount).random() // Get random index
+                                exoPlayer.seekTo(randomIndex, C.TIME_UNSET) // Seek to random song
+                                Toast.makeText(this@MainActivity, "Replaying a random song", Toast.LENGTH_SHORT).show()
+                                playMusic() // Start playing with fade-in
                             } else {
                                 isMusicPlaying = false
                                 playPauseButton.text = "Play"
                                 playPauseButton.isEnabled = true
-
                                 Toast.makeText(this@MainActivity, "Playlist ended", Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -83,7 +82,6 @@ class MainActivity : AppCompatActivity() {
                                 playPauseButton.isEnabled = false
                                 playPauseButton.text = "Play"
                                 Toast.makeText(this@MainActivity, "STATE_IDLE", Toast.LENGTH_SHORT).show()
-//                                prepare()
                             }
                             Player.STATE_BUFFERING -> {
                                 // The player is buffering, disable the button
@@ -149,6 +147,7 @@ class MainActivity : AppCompatActivity() {
                 if (i == 0) {
                     exoPlayer.volume = 0f
                     exoPlayer.play()
+                    isMusicPlaying = true
                 }
                 currentVolume = i * volumeIncrement
                 exoPlayer.volume = currentVolume
@@ -178,7 +177,9 @@ class MainActivity : AppCompatActivity() {
     private fun scheduleFadeOut() {
         val handler = Handler(mainLooper)
         handler.postDelayed({
-            fadeOut {}
+            fadeOut {
+                isMusicPlaying = false
+            }
         }, songDuration - 2 * fadeDuration)
     }
 
@@ -186,6 +187,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         if (::exoPlayer.isInitialized) {
             exoPlayer.release()
+            Toast.makeText(this, "ExoPlayer released", Toast.LENGTH_SHORT).show()
         }
     }
 }
